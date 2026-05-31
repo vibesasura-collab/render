@@ -1,24 +1,40 @@
+# Stage 1: build Java app
 FROM maven:3.9-eclipse-temurin-17 AS build
+
 WORKDIR /app
 COPY . .
-RUN mvn -B clean package dependency:copy-dependencies -DskipTests
 
-FROM ubuntu:22.04
+RUN mvn clean package -DskipTests
+
+# Stage 2: runtime
+FROM eclipse-temurin:17-jdk
+
 WORKDIR /app
 
-ENV DEBIAN_FRONTEND=noninteractive
-
+# Install Chrome + dependencies (IMPORTANT for Selenium)
 RUN apt-get update && apt-get install -y \
-    openjdk-17-jre-headless \
-    chromium-chromedriver \
-    wget curl unzip \
+    wget \
+    curl \
+    unzip \
+    libnss3 \
+    libgbm1 \
+    libasound2 \
+    libx11-xcb1 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libxdamage1 \
+    libxrandr2 \
+    libu2f-udev \
     fonts-liberation \
-    libnss3 libgbm1 libasound2 libx11-xcb1 \
-    libatk-bridge2.0-0 libgtk-3-0 libxdamage1 libxrandr2 \
-    libu2f-udev libvulkan1 \
-    --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/target /app/target
+# Install Google Chrome
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install \
+    && rm google-chrome-stable_current_amd64.deb
 
-CMD ["sh", "-c", "java -cp \"target/classes:target/dependency/*\" Main"]
+# copy jar from build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# run bot
+CMD ["java", "-jar", "app.jar"]
