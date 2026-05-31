@@ -1,5 +1,5 @@
 # =========================
-# STAGE 1: BUILD JAR
+# STAGE 1: BUILD
 # =========================
 FROM maven:3.9-eclipse-temurin-17 AS build
 
@@ -7,21 +7,20 @@ WORKDIR /app
 
 COPY . .
 
-# build project
 RUN mvn clean package -DskipTests
 
 
 # =========================
-# STAGE 2: RUNTIME IMAGE
+# STAGE 2: RUNTIME
 # =========================
 FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
 # =========================
-# INSTALL DEPENDENCIES (FIXED)
+# INSTALL SYSTEM DEPENDENCIES (FIXED FOR RENDER UBUNTU)
 # =========================
-RUN apt-get update --fix-missing && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
@@ -30,13 +29,12 @@ RUN apt-get update --fix-missing && apt-get install -y \
     fonts-liberation \
     libnss3 \
     libgbm1 \
-    libasound2 \
+    libasound2t64 \
     libx11-xcb1 \
     libatk-bridge2.0-0 \
     libgtk-3-0 \
     libxdamage1 \
     libxrandr2 \
-    libu2f-udev \
     libxcomposite1 \
     libxext6 \
     libxfixes3 \
@@ -56,12 +54,12 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 
 
 # =========================
-# COPY JAR FROM BUILD
+# COPY JAR
 # =========================
 COPY --from=build /app/target/*.jar app.jar
 
 
 # =========================
-# RUN APPLICATION
+# RUN APP
 # =========================
 CMD ["java", "-jar", "app.jar"]
