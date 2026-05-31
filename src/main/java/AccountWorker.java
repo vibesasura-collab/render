@@ -4,9 +4,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 
 public class AccountWorker {
 
-    public void runAccount(String user, String pass) {
-
-        System.out.println("Starting account...");
+    public void run(String user, String pass) {
 
         ChromeOptions options = new ChromeOptions();
 
@@ -25,18 +23,13 @@ public class AccountWorker {
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
-            Thread.sleep(4000);
-
-            System.out.println("Login success ✔");
+            Thread.sleep(3000);
 
             driver.get("https://elem.cards/guild/arena/");
 
-            Thread.sleep(3000);
-
-            System.out.println("Account finished ✔");
+            System.out.println("Done account ✔");
 
         } catch (Exception e) {
-            System.out.println("Error in account:");
             e.printStackTrace();
         } finally {
             driver.quit();
