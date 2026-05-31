@@ -10,12 +10,11 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("=== BOT STARTED ON RENDER ===");
-
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+        System.out.println("=== BOT STARTED (21–30) ===");
 
         ChromeOptions options = new ChromeOptions();
 
+        // 🔥 Render stable flags
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -26,22 +25,20 @@ public class Main {
 
         try {
 
-            for (int i = 21; i <= 41; i++) {
+            for (int i = 21; i <= 30; i++) {
 
                 String user = System.getenv("GAME_ID_" + i);
                 String pass = System.getenv("GAME_PASSWORD_" + i);
 
                 if (user == null || pass == null) {
-                    System.out.println("Skipping account " + i + " (missing env)");
+                    System.out.println("Skipping " + i);
                     continue;
                 }
 
                 System.out.println("\n▶ Account " + i);
 
-                boolean loginOk = login(user, pass);
-
-                if (!loginOk) {
-                    System.out.println("Login failed for " + i);
+                if (!login(user, pass)) {
+                    System.out.println("Login failed " + i);
                     continue;
                 }
 
@@ -64,17 +61,17 @@ public class Main {
             }
 
         } catch (Exception e) {
+            System.out.println("🔥 GLOBAL ERROR:");
             e.printStackTrace();
         } finally {
             if (driver != null) driver.quit();
         }
 
-        System.out.println("=== FINISHED ALL ACCOUNTS ===");
+        System.out.println("=== DONE (21–30) ===");
     }
 
     // ---------------- LOGIN ----------------
     private static boolean login(String user, String pass) {
-
         try {
             driver.get("https://elem.cards/login/");
             sleep(2000);
@@ -84,7 +81,6 @@ public class Main {
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
             sleep(4000);
-
             return true;
 
         } catch (Exception e) {
@@ -97,7 +93,7 @@ public class Main {
 
         int ticks = 0;
 
-        while (ticks < 300) {
+        while (ticks < 250) {
 
             boolean action = false;
 
@@ -122,7 +118,6 @@ public class Main {
 
     // ---------------- CLICK SAFE ----------------
     private static boolean click(String css) {
-
         List<WebElement> el = driver.findElements(By.cssSelector(css));
 
         if (!el.isEmpty()) {
