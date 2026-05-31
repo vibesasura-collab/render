@@ -10,13 +10,12 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("=== RENDER BOT STARTED ===");
+        System.out.println("=== BOT STARTED ON RENDER ===");
 
         System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
 
         ChromeOptions options = new ChromeOptions();
 
-        // 🔥 Render stable flags
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -33,13 +32,18 @@ public class Main {
                 String pass = System.getenv("GAME_PASSWORD_" + i);
 
                 if (user == null || pass == null) {
-                    System.out.println("Skipping account " + i);
+                    System.out.println("Skipping account " + i + " (missing env)");
                     continue;
                 }
 
                 System.out.println("\n▶ Account " + i);
 
-                login(user, pass);
+                boolean loginOk = login(user, pass);
+
+                if (!loginOk) {
+                    System.out.println("Login failed for " + i);
+                    continue;
+                }
 
                 driver.get("https://elem.cards/guild/arena/");
                 sleep(2000);
@@ -47,13 +51,13 @@ public class Main {
                 List<WebElement> join =
                         driver.findElements(By.xpath("//a[contains(@href,'/guild/arena/join/')]"));
 
-                if (!join.isEmpty()) {
-                    driver.get(join.get(0).getAttribute("href"));
-                    sleep(2000);
-                } else {
+                if (join.isEmpty()) {
                     System.out.println("Arena not started for " + i);
                     continue;
                 }
+
+                driver.get(join.get(0).getAttribute("href"));
+                sleep(2000);
 
                 executeArena();
 
@@ -65,23 +69,30 @@ public class Main {
             if (driver != null) driver.quit();
         }
 
-        System.out.println("=== DONE ===");
+        System.out.println("=== FINISHED ALL ACCOUNTS ===");
     }
 
     // ---------------- LOGIN ----------------
-    private static void login(String user, String pass) {
-        driver.get("https://elem.cards/login/");
-        sleep(2000);
+    private static boolean login(String user, String pass) {
 
-        driver.findElement(By.name("plogin")).sendKeys(user);
-        driver.findElement(By.name("ppass")).sendKeys(pass);
-        driver.findElement(By.cssSelector("input[type='submit']")).click();
+        try {
+            driver.get("https://elem.cards/login/");
+            sleep(2000);
 
-        sleep(4000);
-        System.out.println("Login success ✔");
+            driver.findElement(By.name("plogin")).sendKeys(user);
+            driver.findElement(By.name("ppass")).sendKeys(pass);
+            driver.findElement(By.cssSelector("input[type='submit']")).click();
+
+            sleep(4000);
+
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    // ---------------- ARENA LOOP ----------------
+    // ---------------- ARENA ----------------
     private static void executeArena() {
 
         int ticks = 0;
@@ -111,6 +122,7 @@ public class Main {
 
     // ---------------- CLICK SAFE ----------------
     private static boolean click(String css) {
+
         List<WebElement> el = driver.findElements(By.cssSelector(css));
 
         if (!el.isEmpty()) {
