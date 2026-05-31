@@ -2,94 +2,108 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class Main {
 
-    private static WebDriver driver;
+    public static void main(String[] args) throws Exception {
 
-    public static void main(String[] args) {
+        System.out.println("=== PARALLEL BOT READY (21–30) ===");
 
-        System.out.println("=== BOT STARTED (21–30) ===");
+        // ⏳ WAIT UNTIL EVENT TIME (optional)
+        long startTime = System.currentTimeMillis() + 10000; // 10 sec demo wait
+
+        System.out.println("Waiting for event trigger...");
+
+        while (System.currentTimeMillis() < startTime) {
+            Thread.sleep(500);
+        }
+
+        System.out.println("🔥 EVENT STARTED — launching all accounts");
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        List<Future<?>> tasks = new ArrayList<>();
+
+        for (int i = 21; i <= 30; i++) {
+
+            int accountId = i;
+
+            tasks.add(executor.submit(() -> runAccount(accountId)));
+        }
+
+        for (Future<?> f : tasks) {
+            f.get();
+        }
+
+        executor.shutdown();
+
+        System.out.println("=== ALL ACCOUNTS FINISHED ===");
+    }
+
+    // ---------------- RUN EACH ACCOUNT ----------------
+    private static void runAccount(int i) {
 
         ChromeOptions options = new ChromeOptions();
 
-        // 🔥 Render stable flags
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
 
-        driver = new ChromeDriver(options);
+        WebDriver driver = new ChromeDriver(options);
 
         try {
 
-            for (int i = 21; i <= 30; i++) {
+            String user = System.getenv("GAME_ID_" + i);
+            String pass = System.getenv("GAME_PASSWORD_" + i);
 
-                String user = System.getenv("GAME_ID_" + i);
-                String pass = System.getenv("GAME_PASSWORD_" + i);
-
-                if (user == null || pass == null) {
-                    System.out.println("Skipping " + i);
-                    continue;
-                }
-
-                System.out.println("\n▶ Account " + i);
-
-                if (!login(user, pass)) {
-                    System.out.println("Login failed " + i);
-                    continue;
-                }
-
-                driver.get("https://elem.cards/guild/arena/");
-                sleep(2000);
-
-                List<WebElement> join =
-                        driver.findElements(By.xpath("//a[contains(@href,'/guild/arena/join/')]"));
-
-                if (join.isEmpty()) {
-                    System.out.println("Arena not started for " + i);
-                    continue;
-                }
-
-                driver.get(join.get(0).getAttribute("href"));
-                sleep(2000);
-
-                executeArena();
-
+            if (user == null || pass == null) {
+                System.out.println("Missing account " + i);
+                return;
             }
 
-        } catch (Exception e) {
-            System.out.println("🔥 GLOBAL ERROR:");
-            e.printStackTrace();
-        } finally {
-            if (driver != null) driver.quit();
-        }
+            System.out.println("▶ Account " + i + " starting");
 
-        System.out.println("=== DONE (21–30) ===");
-    }
-
-    // ---------------- LOGIN ----------------
-    private static boolean login(String user, String pass) {
-        try {
+            // LOGIN
             driver.get("https://elem.cards/login/");
-            sleep(2000);
+            Thread.sleep(2000);
 
             driver.findElement(By.name("plogin")).sendKeys(user);
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
-            sleep(4000);
-            return true;
+            Thread.sleep(4000);
+
+            // ARENA
+            driver.get("https://elem.cards/guild/arena/");
+            Thread.sleep(2000);
+
+            var join = driver.findElements(
+                    By.xpath("//a[contains(@href,'/guild/arena/join/')]")
+            );
+
+            if (join.isEmpty()) {
+                System.out.println("Arena not started for " + i);
+                return;
+            }
+
+            driver.get(join.get(0).getAttribute("href"));
+
+            executeArena(driver);
 
         } catch (Exception e) {
-            return false;
+            System.out.println("Error account " + i);
+        } finally {
+            driver.quit();
         }
     }
 
-    // ---------------- ARENA ----------------
-    private static void executeArena() {
+    // ---------------- ARENA LOOP ----------------
+    private static void executeArena(WebDriver driver) throws Exception {
 
         int ticks = 0;
 
@@ -97,28 +111,27 @@ public class Main {
 
             boolean action = false;
 
-            action |= click("a[href*='attack0']");
-            action |= click("a[href*='attack1']");
-            action |= click("a[href*='attack2']");
+            action |= click(driver, "a[href*='attack0']");
+            action |= click(driver, "a[href*='attack1']");
+            action |= click(driver, "a[href*='attack2']");
 
             if (!action) {
-                sleep(1500);
+                Thread.sleep(1500);
                 driver.navigate().refresh();
 
                 if (driver.findElements(By.cssSelector("a[href*='attack']")).isEmpty()) {
-                    System.out.println("Arena ended");
                     break;
                 }
             }
 
-            sleep(400);
+            Thread.sleep(400);
             ticks++;
         }
     }
 
-    // ---------------- CLICK SAFE ----------------
-    private static boolean click(String css) {
-        List<WebElement> el = driver.findElements(By.cssSelector(css));
+    private static boolean click(WebDriver driver, String css) {
+
+        var el = driver.findElements(By.cssSelector(css));
 
         if (!el.isEmpty()) {
             try {
@@ -130,9 +143,5 @@ public class Main {
             return true;
         }
         return false;
-    }
-
-    private static void sleep(int ms) {
-        try { Thread.sleep(ms); } catch (Exception ignored) {}
     }
 }
