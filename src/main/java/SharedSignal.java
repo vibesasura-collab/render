@@ -1,3 +1,12 @@
 public class SharedSignal {
-    public static volatile boolean START = false;
+
+    private static volatile boolean started = false;
+
+    public static void startSignal() {
+        started = true;
+    }
+
+    public static boolean isStarted() {
+        return started;
+    }
 }
