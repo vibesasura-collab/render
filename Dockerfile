@@ -10,8 +10,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     openjdk-17-jre-headless \
-    chromium-browser \
     chromium-chromedriver \
+    wget curl unzip \
     fonts-liberation \
     libnss3 libgbm1 libasound2 libx11-xcb1 \
     libatk-bridge2.0-0 libgtk-3-0 libxdamage1 libxrandr2 \
